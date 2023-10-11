@@ -12,14 +12,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::unprepared('
-        CREATE TRIGGER add_poste_notif
-        AFTER INSERT ON `postes`
-        FOR EACH ROW
-                BEGIN
-                   INSERT INTO `notifications` (`poste_id`,`dateNotif`) VALUES (NEW.id,CURTIME());
-                END
-        ');
+    //     DB::unprepared('
+    //     CREATE TRIGGER add_poste_notif
+    //     AFTER INSERT ON `postes`
+    //     FOR EACH ROW
+    //             BEGIN
+    //                INSERT INTO `notifications` (`poste_id`,`dateNotif`) VALUES (NEW.id,CURTIME());
+    //             END
+    //     ');
     }
 
     /**
