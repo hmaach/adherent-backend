@@ -45,9 +45,7 @@ class PosteController extends Controller
             ->leftJoin('reacts', 'reacts.poste_id', '=', 'postes.id')
             ->leftJoin('filieres', 'filieres.id', '=', 'postes.audience_id')
             ->leftJoin('p_d_f_s', 'p_d_f_s.poste_id', '=', 'postes.id')
-            // ->groupBy('postes.id', 'reacts.user_id', 'p_d_f_s.path')
-            ->groupBy('postes.id', 'users.id', 'users.nom', 'users.prenom', 'users.role', 'reacts.user_id', 'p_d_f_s.path')
-
+            ->groupBy('postes.id', 'reacts.user_id', 'p_d_f_s.path')
             ->orderBy('created_at', 'desc');
 
         if ($type === 'own' && Auth::check()) {
@@ -92,6 +90,9 @@ class PosteController extends Controller
             $query->where('postes.type', $type);
         }
 
+//        if ($type === 'own' && isset($user)) {
+//            $query->where('postes.user_id', $user->id);
+//        }
 
         if ($q) {
             $query->where(function ($query) use ($q) {
@@ -128,6 +129,7 @@ class PosteController extends Controller
             'hasMore' => $hasMore,
         ]);
     }
+
 
 
     public
