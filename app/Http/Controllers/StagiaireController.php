@@ -34,7 +34,7 @@ class StagiaireController extends Controller
 //            ->get();
 
         $stagiaires = User::with("groupe.filiere")
-            ->whereIn('id', [1, 2, 3, 4]) // Replace [1, 2, 3, 4] with the actual IDs you want to fetch
+            ->whereIn('id', [1, 2, 3, 4])
             ->get();
 
 

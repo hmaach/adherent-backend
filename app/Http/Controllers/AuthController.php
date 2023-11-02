@@ -13,10 +13,19 @@ class AuthController extends Controller
 {
     public function user()
     {
-         $user = Auth::user();
-         return response([
-             'user'=>$user
-         ]);
+        $user = Auth::user();
+        return response([
+            'user' => $user
+        ]);
+    }
+
+    public function checkAuth()
+    {
+        if (Auth::user()) {
+            return response()->json(['message' => true]);
+        } else {
+            return response()->json(['message' => false]);
+        }
     }
 
     public function register(Request $request)
@@ -72,7 +81,8 @@ class AuthController extends Controller
     }
 
 
-    public function logout(){
+    public function logout()
+    {
 
         $cookie = Cookie::forget('jwt');
         return \response([

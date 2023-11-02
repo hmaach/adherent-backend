@@ -21,7 +21,7 @@ class UserFactory extends Factory
     {
         $password = Hash::make('0000');
         $sex = fake()->randomElement(['homme', 'femme']);
-        $role = fake()->randomElement(['admin', 'formateur', 'stagiaire']);
+        $role = fake()->randomElement(['admin', 'formateur', 'stagiaire','adherent','user']);
         $statut = $role === 'stagiaire'
             ? fake()->randomElement(['1A', '2A', 'diplomee'])
             : null;

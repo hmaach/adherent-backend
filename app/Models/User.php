@@ -107,8 +107,23 @@ class User extends Authenticatable
     {
         return $this->hasMany(Interet::class);
     }
+
     public function pdfCategories()
     {
         return $this->hasMany(PdfCategorie::class);
+    }
+
+    public function adherent()
+    {
+        return $this->hasOne(Adherent::class);
+    }
+    public function announces()
+    {
+        return $this->hasMany(Announce::class);
+    }
+
+    public function rating()
+    {
+        return $this->hasMany(Rating::class);
     }
 }
