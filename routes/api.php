@@ -33,11 +33,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::controller(AdherentController::class)->group(function () {
         Route::prefix('adherent')->group(function () {
+            Route::get('/', 'adherentsIndex');
             Route::get('/{id}', 'index');
             Route::put('/{id}/update', 'update');
             Route::post('/{id}/updateImage', 'updateImage');
-            Route::post('/{id}/update-profil','updateProfilAdherent');
-            Route::delete('/{id}/remove-profil','removeProfilAdherent');
+            Route::post('/{id}/update-profil', 'updateProfilAdherent');
+            Route::delete('/{id}/remove-profil', 'removeProfilAdherent');
             Route::post('/{id}/removeImage', 'removeImage');
             Route::post('/{id}/rate', 'rate');
         });
@@ -82,6 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::get('archive', [PdfCategorieController::class, 'index']);
 Route::prefix('public')->group(function () {
+    Route::get('adherent/', [AdherentController::class, 'adherentsIndex']);
     Route::get('adherent/{id}', [AdherentController::class, 'index']);
     Route::post('adherent/{id}/profil', [AdherentController::class, 'updateProfilAdherent']);
     Route::get('4-adherents', [AdherentController::class, 'randomFouradherent']);
