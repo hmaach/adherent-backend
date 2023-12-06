@@ -9,8 +9,10 @@ use App\Http\Requests\StoreAdherentRequest;
 use App\Http\Requests\UpdateAdherentRequest;
 use App\Models\Announce;
 use App\Models\Rating;
+use App\Models\Secteur;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class AdherentController extends Controller
@@ -50,6 +52,80 @@ class AdherentController extends Controller
             return response()->json(['message' => 'Adherent not found'], 404);
         }
     }
+
+    public function adherentsIndex(Request $request)
+    {
+        $query = Adherent::query();
+
+        $cities = $request->input('cities');
+        if ($cities && is_array($cities)) {
+            $query->whereIn('ville', $cities);
+        }
+
+        $secteurId = $request->input('secteur_id');
+        if ($secteurId) {
+//            $sectuer = Secteur::find($secteurId);
+            $query->where('secteur_id', $secteurId);
+        }
+
+        $search = $request->input('search');
+        if ($search != "") {
+            $query->where(function ($q) use ($search) {
+                $q->where('id', 'like', "%$search%")
+                    ->orWhere('profession', 'like', "%$search%")
+                    ->orWhere('ville', 'like', "%$search%")
+                    ->orWhere('propos', 'like', "%$search%");
+            });
+        }
+
+        $sort = $request->input('sort');
+        if ($sort === "recent") {
+            $query->orderBy("created_at");
+        } elseif ($sort === "ancien") {
+            $query->orderBy("created_at", "desc");
+        } elseif ($sort === "rating") {
+            $query->orderByDesc(DB::raw('(SELECT AVG(value) FROM ratings WHERE adherent_id = adherents.id)'));
+        }
+
+        $adherents = $query->inRandomOrder()->paginate(7);
+
+        foreach ($adherents as $adherent) {
+            $ratings = $adherent->rating;
+
+            if ($ratings->isNotEmpty()) {
+                $averageRating = round($ratings->avg('value'), 1);
+                $adherent->rating = $averageRating;
+            } else {
+                $adherent->rating = 0.0;
+            }
+            $adherent->unsetRelation('rating');
+        }
+
+
+        return $adherents;
+    }
+
+
+//    public function adherentsIndex()
+//    {
+//        $adherents = Adherent::inRandomOrder()->paginate(7);
+//
+//        foreach ($adherents as $adherent) {
+//            if ($adherent) {
+//                $ratings = $adherent->rating;
+//
+//                if ($ratings->isNotEmpty()) {
+//                    $averageRating = round($ratings->avg('value'), 1);
+//                    $adherent->rating = $averageRating;
+//                } else {
+//                    $adherent->average_rating = 0.0;
+//                }
+//                $adherent->unsetRelation('rating');
+//            }
+//        }
+//        return $adherents;
+//    }
+
 
     public function rate(StoreRatingRequest $request, string $id)
     {

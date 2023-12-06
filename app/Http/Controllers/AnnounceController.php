@@ -6,7 +6,11 @@ use App\Models\Adherent;
 use App\Models\Announce;
 use App\Http\Requests\StoreAnnounceRequest;
 use App\Http\Requests\UpdateAnnounceRequest;
+use App\Models\Evenement;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
@@ -27,12 +31,76 @@ class AnnounceController extends Controller
     }
 
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    // public function getAnnounces()
+    // {
+    //     $announces = Announce::where('approved', 1)->latest('created_at')->paginate(7);
+    //     $evenements = Evenement::latest('created_at')->paginate(7);
+    //     return $announces;
+    // }
+
+
+    public function getAnnounces()
     {
-        //
+        $announces = Announce::where('approved', 1)->latest('created_at')->get();
+        $evenements = Evenement::latest('created_at')->get();
+
+        $mergedData = new Collection([...$announces->toArray(), ...$evenements->toArray()]);
+
+        $mergedData->transform(function ($item) {
+            $item['type'] = isset($item['type']) ? $item['type'] : (isset($item['evenement_type']) ? 'evenement' : 'announce');
+            return $item;
+        });
+
+        $sortedData = $mergedData->sortByDesc('created_at')->values();
+
+        $perPage = 7;
+        $currentPage = request()->input('page', 1);
+        $paginatedData = new LengthAwarePaginator(
+            $sortedData->forPage($currentPage, $perPage),
+            $sortedData->count(),
+            $perPage,
+            $currentPage
+        );
+
+        return $paginatedData;
+    }
+
+
+    public function searchAnnounces($q)
+    {
+        $announces = Announce::where('approved', 1)
+            ->where(function ($query) use ($q) {
+                $query->where('desc', 'like', "%$q%");
+            })
+            ->latest('created_at')
+            ->get();
+
+        $evenements = Evenement::where(function ($query) use ($q) {
+            $query->where('titre', 'like', "%$q%")
+                ->orWhere('description', 'like', "%$q%");
+        })
+            ->latest('created_at')
+            ->get();
+
+        $mergedData = new Collection([...$announces->toArray(), ...$evenements->toArray()]);
+
+        $mergedData->transform(function ($item) {
+            $item['type'] = isset($item['type']) ? $item['type'] : (isset($item['evenement_type']) ? 'evenement' : 'announce');
+            return $item;
+        });
+
+        $sortedData = $mergedData->sortByDesc('created_at')->values();
+
+        $perPage = 7;
+        $currentPage = request()->input('page', 1);
+        $paginatedData = new LengthAwarePaginator(
+            $sortedData->forPage($currentPage, $perPage),
+            $sortedData->count(),
+            $perPage,
+            $currentPage
+        );
+
+        return $paginatedData;
     }
 
     /**
@@ -63,6 +131,7 @@ class AnnounceController extends Controller
 
                 return response()->json(['message' => 'success', 'path' => $announce->img]);
             } catch (\Exception $e) {
+                dd($e);
                 return response()->json(['message' => 'Échec de la création'], 500);
             }
         } else {
@@ -162,5 +231,4 @@ class AnnounceController extends Controller
             return response()->json(['message' => "Unauthorized"], 401);
         }
     }
-
 }
