@@ -28,7 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::resource('events', EvenementController::class);
     Route::resource('filiere', FiliereController::class);
     Route::resource('category', PdfCategorieController::class);
-//    Route::resource('adherent', AdherentController::class);
+    //    Route::resource('adherent', AdherentController::class);
 
 
     Route::controller(AdherentController::class)->group(function () {
@@ -77,17 +77,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::controller(PDFController::class)->group(function () {
         Route::put('pdf/update/{pdf}', 'update');
         Route::post('pdf/removecategory/{pdf}', 'removeCategory');
-
     });
 });
 
 Route::get('archive', [PdfCategorieController::class, 'index']);
 Route::prefix('public')->group(function () {
-    Route::get('adherent/', [AdherentController::class, 'adherentsIndex']);
-    Route::get('adherent/{id}', [AdherentController::class, 'index']);
-    Route::post('adherent/{id}/profil', [AdherentController::class, 'updateProfilAdherent']);
-    Route::get('4-adherents', [AdherentController::class, 'randomFouradherent']);
-    Route::get('announce/{id}', [AnnounceController::class, 'index']);
+    Route::controller(AdherentController::class)->group(function () {
+        Route::get('adherent/', 'adherentsIndex');
+        Route::get('adherent/{id}', 'index');
+        Route::post('adherent/{id}/profil', 'updateProfilAdherent');
+        Route::get('4-adherents', 'randomFouradherent');
+    });
+
+    Route::controller(AnnounceController::class)->group(function () {
+        Route::get('announce/{id}', 'index');
+        Route::get('announces', 'getAnnounces');
+        Route::get('announces/search/{q}', 'searchAnnounces');
+    });
+
     Route::get('secteur', [SecteurController::class, 'index']);
 });
 Route::resource('/pdf', PDFController::class);

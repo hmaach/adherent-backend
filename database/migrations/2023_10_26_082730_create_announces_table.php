@@ -13,11 +13,11 @@ return new class extends Migration {
         Schema::create('announces', function (Blueprint $table) {
             $table->id();
             $table->foreignIdFor(\App\Models\User::class, "user_id");
-            $table->bigInteger('order');
+            $table->bigInteger('order')->nullable();
             $table->boolean('approved')->default(false);
-            $table->text('desc');
+            $table->text('desc')->nullable();
             $table->dateTime('debut');
-            $table->dateTime('fin');
+            $table->dateTime('fin')->nullable();
             $table->string('img')->nullable();
             $table->timestamps();
         });
