@@ -16,8 +16,7 @@ return new class extends Migration
             $table->string('nom');
             $table->string('prenom');
             $table->string('tel')->unique()->nullable();
-            $table->string('sex');
-            $table->string('role');
+            $table->string('role')->default('user');
             $table->string('statut')->nullable();
             $table->foreignIdFor(\App\Models\Groupe::class)
                 ->nullable()
