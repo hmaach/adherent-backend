@@ -16,6 +16,8 @@ use \App\Http\Controllers\PdfCategorieController;
 use App\Http\Controllers\ExcelImportController;
 use \App\Http\Controllers\SecteurController;
 
+Route::post('register', [AuthController::class, 'register']);
+
 Route::controller(AuthController::class)->group(function () {
     Route::post('login', 'login');
     Route::get('user', 'user')->middleware('auth:sanctum');
