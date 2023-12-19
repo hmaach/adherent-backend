@@ -56,6 +56,14 @@ class AnnounceController extends Controller
         return $paginatedData;
     }
 
+    public function getUnimprovedAnnounces()
+    {
+        $announces = Announce::where('approved', 0)
+            ->latest('created_at')
+            ->paginate(7);
+        return $announces;
+    }
+
 
     public function searchAnnounces($q)
     {
@@ -145,17 +153,7 @@ class AnnounceController extends Controller
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Announce $announce)
-    {
-        //
-    }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Request $request)
     {
         $data = $request->all();
@@ -171,7 +169,18 @@ class AnnounceController extends Controller
 
         if (isset($data['deletedAnnounce'])) {
             foreach ($data['deletedAnnounce'] as $deletedAnnounceId) {
-                Announce::where('id', $deletedAnnounceId)->delete();
+                // -------------
+                // Announce::where('id', $deletedAnnounceId)->delete();
+                // -------------
+
+
+                $announce = Announce::find($deletedAnnounceId);
+                if ($announce) {
+                    if ($announce->img) {
+                        Storage::delete($announce->img);
+                    }
+                    $announce->delete();
+                }
             }
         }
 
@@ -179,17 +188,6 @@ class AnnounceController extends Controller
     }
 
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateAnnounceRequest $request, Announce $announce)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         $user = Auth::user();
@@ -203,7 +201,7 @@ class AnnounceController extends Controller
                             Storage::delete($announce->img);
                         }
                         $announce->delete();
-                        return response()->json(['message' => "Announce deleted successfully"]);
+                        return response()->json(['message' => "success"]);
                     } else {
                         return response()->json(['message' => "Announce not found"], 404);
                     }

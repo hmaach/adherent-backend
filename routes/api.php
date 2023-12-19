@@ -45,7 +45,10 @@ Route::middleware('auth:sanctum')->group(function () {
             });
             Route::controller(AnnounceController::class)->group(function () {
                 Route::prefix('announce')->group(function () {
-                    Route::put('/{id}/approve', 'approve');
+                    Route::get('', 'getUnimprovedAnnounces');
+                    Route::put('approve/{id}', 'approve');
+                    Route::delete('delete/{id}', 'destroy');
+
                 });
             });
         });
