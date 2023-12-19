@@ -30,15 +30,6 @@ class AnnounceController extends Controller
         return $announces;
     }
 
-
-    // public function getAnnounces()
-    // {
-    //     $announces = Announce::where('approved', 1)->latest('created_at')->paginate(7);
-    //     $evenements = Evenement::latest('created_at')->paginate(7);
-    //     return $announces;
-    // }
-
-
     public function getAnnounces()
     {
         $announces = Announce::where('approved', 1)->latest('created_at')->get();
@@ -141,21 +132,16 @@ class AnnounceController extends Controller
 
     public function approve(string $id)
     {
-        $user = Auth::user();
-        if ($user && $user->role === "admin") {
-            try {
-                $announce = Announce::find($id);
-                if ($announce) {
-                    $announce->approved = true;
-                    $announce->save();
+        try {
+            $announce = Announce::find($id);
+            if ($announce) {
+                $announce->approved = true;
+                $announce->save();
 
-                    return response()->json(['message' => "success"]);
-                }
-            } catch (\Exception $e) {
-                return response()->json(['message' => "Échec de l'approuvement"], 500);
+                return response()->json(['message' => "success"]);
             }
-        } else {
-            return response()->json(['message' => "Vous n'avez pas le droit d'approuver une announce"], 401);
+        } catch (\Exception $e) {
+            return response()->json(['message' => "Échec de l'approuvement"], 500);
         }
     }
 

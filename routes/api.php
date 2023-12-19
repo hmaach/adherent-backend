@@ -15,6 +15,7 @@ use \App\Http\Controllers\PDFController;
 use \App\Http\Controllers\PdfCategorieController;
 use App\Http\Controllers\ExcelImportController;
 use \App\Http\Controllers\SecteurController;
+use App\Http\Controllers\UserController;
 
 Route::post('register', [AuthController::class, 'register']);
 
@@ -26,11 +27,34 @@ Route::controller(AuthController::class)->group(function () {
 });
 
 Route::middleware('auth:sanctum')->group(function () {
+
+    Route::middleware('admin')->group(function () {
+        Route::prefix('admin')->group(function () {
+            Route::controller(UserController::class)->group(function () {
+                Route::prefix('user')->group(function () {
+                    Route::get('', 'index');
+                });
+            });
+            Route::controller(SecteurController::class)->group(function () {
+                Route::prefix('secteur')->group(function () {
+                    Route::get('', 'index');
+                    Route::post('add', 'store');
+                    Route::put('update/{id}', 'update');
+                    Route::delete('delete/{id}', 'destroy');
+                });
+            });
+            Route::controller(AnnounceController::class)->group(function () {
+                Route::prefix('announce')->group(function () {
+                    Route::put('/{id}/approve', 'approve');
+                });
+            });
+        });
+    });
+
     Route::resource('poste', PosteController::class);
     Route::resource('events', EvenementController::class);
     Route::resource('filiere', FiliereController::class);
     Route::resource('category', PdfCategorieController::class);
-    //    Route::resource('adherent', AdherentController::class);
 
 
     Route::controller(AdherentController::class)->group(function () {
@@ -50,7 +74,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('announce')->group(function () {
             Route::get('/{id}', 'index');
             Route::post('/store', 'store');
-            Route::post('/{id}/approve', 'approve');
             Route::put('/edit', 'edit');
             Route::delete('/{id}/delete', 'destroy');
         });
@@ -110,7 +133,6 @@ Route::get('showevents', [EvenementController::class, 'showEvents']);
 Route::get('monthevents', [EvenementController::class, 'thisMonthEvents']);
 Route::get('dayevents', [EvenementController::class, 'getByDay']);
 Route::get('postespublic', [PosteController::class, 'index']);
-Route::resource('notifs', NotificationController::class);
 Route::get('fourstagiaires', [StagiaireController::class, 'randomFourStagiaires']);
 
 
