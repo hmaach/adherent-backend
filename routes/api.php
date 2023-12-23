@@ -33,6 +33,10 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::controller(UserController::class)->group(function () {
                 Route::prefix('user')->group(function () {
                     Route::get('', 'index');
+                    Route::post('/new', 'registerByAdmin');
+                    Route::put('/{id}/reset-password', 'resetPassword');
+                    Route::put('/{id}/change-role', 'changeRole');
+                    Route::delete('/{id}/delete', 'destroy');
                 });
             });
             Route::controller(SecteurController::class)->group(function () {
@@ -48,7 +52,6 @@ Route::middleware('auth:sanctum')->group(function () {
                     Route::get('', 'getUnimprovedAnnounces');
                     Route::put('approve/{id}', 'approve');
                     Route::delete('delete/{id}', 'destroy');
-
                 });
             });
         });

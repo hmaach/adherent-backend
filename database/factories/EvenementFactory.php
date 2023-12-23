@@ -21,13 +21,13 @@ class EvenementFactory extends Factory
         $titre = fake()->text(20);
         $couleur = fake()->randomElement(['red', 'blue', 'yellow', 'green']);
         $description = fake()->text(100);
-        $dateDeb = fake()->dateTimeBetween('now', '+7 days'); // Generate a date within the next 7 days
-        $dateFin = fake()->dateTimeBetween($dateDeb, $dateDeb->format('Y-m-d H:i:s').' +1 day'); // Generate a date within 1 day from $dateDeb
-        $audience = fake()->randomElement(['public', 'etablissement', 'filiere', 'formateurs']);
-        $audience_id = ($audience === 'filiere') ? fake()->numberBetween(1, 4) : null;
+        $dateDeb = fake()->dateTimeBetween('now', '+7 days');
+        $dateFin = fake()->dateTimeBetween($dateDeb, $dateDeb->format('Y-m-d H:i:s') . ' +1 day');
+        // $audience = fake()->randomElement(['public', 'etablissement', 'filiere', 'formateurs']);
+        $audience = 'public';
 
         $user_id = function () {
-            return User::whereNull('groupe_id')
+            return User::where('role', 'admin')
                 ->inRandomOrder()
                 ->value('id');
         };

@@ -17,7 +17,7 @@ class SecteurFactory extends Factory
     public function definition(): array
     {
         return [
-            "lib" => fake()->text(30),
+            "lib" => fake()->text(50),
         ];
     }
 }
