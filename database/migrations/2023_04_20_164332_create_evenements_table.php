@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('titre');
             $table->string('color')->nullable();
             $table->string('oldColor')->nullable();
-            $table->string('type')->nullable();
+            $table->string('type')->default('type');
             $table->string('audience')->default('public');
             $table->integer('audience_id')->nullable();
             $table->dateTime('dateDeb');
