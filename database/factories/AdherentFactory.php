@@ -26,14 +26,14 @@ class AdherentFactory extends Factory
                 ->inRandomOrder()
                 ->value('id');
         };
-//        $secteur_id = function () {
-//            return Secteur::inRandomOrder()
-//                ->value('id');
-//        };
+       $secteur_id = function () {
+           return Secteur::inRandomOrder()
+               ->value('id');
+       };
 
         return [
             'user_id' => $user_id,
-//            'secteur_id' => $secteur_id,
+           'secteur_id' => $secteur_id,
             'propos' => fake()->text(100),
             'profession' => fake()->text(20),
             'ville' => $ville,

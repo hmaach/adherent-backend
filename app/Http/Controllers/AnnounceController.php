@@ -30,15 +30,6 @@ class AnnounceController extends Controller
         return $announces;
     }
 
-
-    // public function getAnnounces()
-    // {
-    //     $announces = Announce::where('approved', 1)->latest('created_at')->paginate(7);
-    //     $evenements = Evenement::latest('created_at')->paginate(7);
-    //     return $announces;
-    // }
-
-
     public function getAnnounces()
     {
         $announces = Announce::where('approved', 1)->latest('created_at')->get();
@@ -63,6 +54,14 @@ class AnnounceController extends Controller
         );
 
         return $paginatedData;
+    }
+
+    public function getUnimprovedAnnounces()
+    {
+        $announces = Announce::where('approved', 0)
+            ->latest('created_at')
+            ->paginate(7);
+        return $announces;
     }
 
 
@@ -141,35 +140,20 @@ class AnnounceController extends Controller
 
     public function approve(string $id)
     {
-        $user = Auth::user();
-        if ($user && $user->role === "admin") {
-            try {
-                $announce = Announce::find($id);
-                if ($announce) {
-                    $announce->approved = true;
-                    $announce->save();
+        try {
+            $announce = Announce::find($id);
+            if ($announce) {
+                $announce->approved = true;
+                $announce->save();
 
-                    return response()->json(['message' => "success"]);
-                }
-            } catch (\Exception $e) {
-                return response()->json(['message' => "Échec de l'approuvement"], 500);
+                return response()->json(['message' => "success"]);
             }
-        } else {
-            return response()->json(['message' => "Vous n'avez pas le droit d'approuver une announce"], 401);
+        } catch (\Exception $e) {
+            return response()->json(['message' => "Échec de l'approuvement"], 500);
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Announce $announce)
-    {
-        //
-    }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Request $request)
     {
         $data = $request->all();
@@ -185,7 +169,18 @@ class AnnounceController extends Controller
 
         if (isset($data['deletedAnnounce'])) {
             foreach ($data['deletedAnnounce'] as $deletedAnnounceId) {
-                Announce::where('id', $deletedAnnounceId)->delete();
+                // -------------
+                // Announce::where('id', $deletedAnnounceId)->delete();
+                // -------------
+
+
+                $announce = Announce::find($deletedAnnounceId);
+                if ($announce) {
+                    if ($announce->img) {
+                        Storage::delete($announce->img);
+                    }
+                    $announce->delete();
+                }
             }
         }
 
@@ -193,17 +188,6 @@ class AnnounceController extends Controller
     }
 
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateAnnounceRequest $request, Announce $announce)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         $user = Auth::user();
@@ -217,7 +201,7 @@ class AnnounceController extends Controller
                             Storage::delete($announce->img);
                         }
                         $announce->delete();
-                        return response()->json(['message' => "Announce deleted successfully"]);
+                        return response()->json(['message' => "success"]);
                     } else {
                         return response()->json(['message' => "Announce not found"], 404);
                     }
