@@ -32,7 +32,7 @@ class AnnounceController extends Controller
 
     public function getAnnounces()
     {
-        $announces = Announce::where('approved', 1)->latest('created_at')->get();
+        $announces = Announce::with('user')->where('approved', 1)->latest('created_at')->get();
         $evenements = Evenement::latest('created_at')->get();
 
         $mergedData = new Collection([...$announces->toArray(), ...$evenements->toArray()]);
@@ -50,7 +50,8 @@ class AnnounceController extends Controller
             $sortedData->forPage($currentPage, $perPage),
             $sortedData->count(),
             $perPage,
-            $currentPage
+            $currentPage,
+            ['path' => LengthAwarePaginator::resolveCurrentPath()]
         );
 
         return $paginatedData;
@@ -67,7 +68,7 @@ class AnnounceController extends Controller
 
     public function searchAnnounces($q)
     {
-        $announces = Announce::where('approved', 1)
+        $announces = Announce::with('user')->where('approved', 1)
             ->where(function ($query) use ($q) {
                 $query->where('desc', 'like', "%$q%");
             })
@@ -96,7 +97,8 @@ class AnnounceController extends Controller
             $sortedData->forPage($currentPage, $perPage),
             $sortedData->count(),
             $perPage,
-            $currentPage
+            $currentPage,
+            ['path' => LengthAwarePaginator::resolveCurrentPath()]
         );
 
         return $paginatedData;
@@ -114,6 +116,8 @@ class AnnounceController extends Controller
                 $announce = new Announce();
                 $announce->user_id = $user->id;
                 $announce->order = $request->order;
+                $announce->titre = $request->titre;
+                $announce->prix = $request->prix;
                 $announce->desc = $request->desc;
                 $announce->debut = $request->debut;
                 $announce->fin = $request->fin;
@@ -157,10 +161,13 @@ class AnnounceController extends Controller
     public function edit(Request $request)
     {
         $data = $request->all();
+        $user = Auth::user();
 
         if (isset($data['announces'])) {
             foreach ($data['announces'] as $announceData) {
-                $announce = Announce::where('id', $announceData['id'])->first();
+                $announce = Announce::where('id', $announceData['id'])
+                    ->where('user_id', $user->id)
+                    ->first();
                 if ($announce) {
                     $announce->update($announceData);
                 }
@@ -174,10 +181,12 @@ class AnnounceController extends Controller
                 // -------------
 
 
-                $announce = Announce::find($deletedAnnounceId);
+                $announce = Announce::where('id', $deletedAnnounceId)
+                    ->where('user_id', $user->id)
+                    ->first();
                 if ($announce) {
                     if ($announce->img) {
-                        Storage::delete($announce->img);
+                        Storage::disk('public')->delete($announce->img);
                     }
                     $announce->delete();
                 }
@@ -198,7 +207,7 @@ class AnnounceController extends Controller
                 try {
                     if ($announce) {
                         if ($announce->img) {
-                            Storage::delete($announce->img);
+                            Storage::disk('public')->delete($announce->img);
                         }
                         $announce->delete();
                         return response()->json(['message' => "success"]);

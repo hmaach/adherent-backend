@@ -22,7 +22,7 @@ class AdherentController extends Controller
      */
     public function index(string $id)
     {
-        $adherent = Adherent::where('user_id', $id)->with('secteur')->first();
+        $adherent = Adherent::where('user_id', $id)->with(['secteur', 'user'])->first();
 
         if ($adherent) {
             $ratings = $adherent->rating;
@@ -55,11 +55,16 @@ class AdherentController extends Controller
 
     public function adherentsIndex(Request $request)
     {
-        $query = Adherent::query();
+        $query = Adherent::with('user');
 
         $cities = $request->input('cities');
-        if ($cities && is_array($cities)) {
-            $query->whereIn('ville', $cities);
+        if ($cities) {
+            if (is_string($cities)) {
+                $cities = explode(',', $cities);
+            }
+            if (is_array($cities)) {
+                $query->whereIn('ville', $cities);
+            }
         }
 
         $secteurId = $request->input('secteur_id');
@@ -160,7 +165,7 @@ class AdherentController extends Controller
 
     public function randomFouradherent()
     {
-        $adherent = Adherent::inRandomOrder()
+        $adherent = Adherent::with('user')->inRandomOrder()
             ->limit(4)
             ->get();
         return $adherent;
@@ -347,9 +352,46 @@ class AdherentController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public
-    function destroy(Adherent $adherent)
+    public function destroy(Adherent $adherent)
     {
         //
+    }
+
+    public function adminAbonnementsIndex(Request $request)
+    {
+        $query = Adherent::with('user', 'secteur');
+
+        $search = $request->input('search');
+        if ($search != "") {
+            $query->whereHas('user', function ($q) use ($search) {
+                $q->where('nom', 'like', "%$search%")
+                  ->orWhere('prenom', 'like', "%$search%")
+                  ->orWhere('email', 'like', "%$search%");
+            })->orWhere('profession', 'like', "%$search%");
+        }
+
+        $status = $request->input('status');
+        if ($status && $status !== 'all') {
+            $query->where('subscription_status', $status);
+        }
+
+        $perPage = $request->input('per_page', 25);
+        $adherents = $query->orderBy('created_at', 'desc')->paginate($perPage);
+
+        return response()->json($adherents);
+    }
+
+    public function updateAbonnement(Request $request, string $id)
+    {
+        $adherent = Adherent::find($id);
+        if (!$adherent) {
+            return response()->json(['message' => 'Adherent not found'], 404);
+        }
+
+        $adherent->subscription_status = $request->input('status', $adherent->subscription_status);
+        $adherent->subscription_end_date = $request->input('end_date', $adherent->subscription_end_date);
+        $adherent->save();
+
+        return response()->json(['message' => 'success', 'adherent' => $adherent]);
     }
 }

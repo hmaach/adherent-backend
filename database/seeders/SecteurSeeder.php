@@ -13,8 +13,26 @@ class SecteurSeeder extends Seeder
      */
     public function run(): void
     {
-        Secteur::factory()
-            ->count(50)
-            ->create();
+        $secteurs = [
+            'Plomberie & Chauffage',
+            'Électricité & Éclairage',
+            'Agriculture & Machinerie Agricole',
+            'Informatique & Développement Web',
+            'Soutien Scolaire & Enseignement',
+            'Menuiserie & Charpente',
+            'Climatisation & Froid',
+            'Design & Décoration',
+            'Photographie & Événementiel',
+            'Transport & Logistique',
+            'Bâtiment & Maçonnerie',
+            'Esthétique & Coiffure',
+            'Mécanique Automobile',
+            'Nettoyage & Entretien',
+            'Jardinage & Aménagement Paysager'
+        ];
+
+        foreach ($secteurs as $secteur) {
+            Secteur::firstOrCreate(['lib' => $secteur]);
+        }
     }
 }

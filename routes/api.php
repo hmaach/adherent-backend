@@ -54,6 +54,12 @@ Route::middleware('auth:sanctum')->group(function () {
                     Route::delete('delete/{id}', 'destroy');
                 });
             });
+            Route::controller(AdherentController::class)->group(function () {
+                Route::prefix('abonnement')->group(function () {
+                    Route::get('', 'adminAbonnementsIndex');
+                    Route::put('update/{id}', 'updateAbonnement');
+                });
+            });
         });
     });
 
@@ -170,7 +176,6 @@ Route::get('cv/{id}', [StagiaireController::class, 'show']);
 Route::post('/stagiaires/{id}/add-propos', [StagiaireController::class, 'addPropos']);
 
 
-Route::post('/stagiaires/import', [ExcelImportController::class, 'import']);
 Route::get('/import', [ExcelImportController::class, 'importView'])->name('import.view');
 Route::post('/stagiaires/import', [ExcelImportController::class, 'import'])->name('import');
 Route::post('/search', [ExcelImportController::class, 'search'])->name('search');

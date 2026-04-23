@@ -146,12 +146,11 @@ class AuthController extends Controller
         $user = Auth::user();
         $user->pdfCategories;
         $token = $user->createToken('token')->plainTextToken;
-        $cookie = cookie('jwt', $token, 60 * 24);
 
         return response([
             'user' => $user,
             'token' => $token,
-        ])->withCookie($cookie);
+        ]);
     }
 
 
