@@ -81,7 +81,7 @@ class UserController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'newRole' => ['required', Rule::in(['admin', 'user', 'adherent'])],
+                'newRole' => ['required', Rule::in(['admin', 'user', 'adherent', 'post_agent'])],
             ]);
 
             $validator->validate();
@@ -194,7 +194,7 @@ class UserController extends Controller
                 'nom' => ['required', 'string', 'max:255'],
                 'prenom' => ['required', 'string', 'max:255'],
                 'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-                'role' => ['required', Rule::in(['admin', 'user', 'adherent'])],
+                'role' => ['required', Rule::in(['admin', 'user', 'adherent', 'post_agent'])],
                 'password' => $request->input('defaultPasword')
                     ? []
                     : ['required', 'confirmed', Rules\Password::defaults()],
@@ -262,7 +262,7 @@ class UserController extends Controller
             $validator = Validator::make($request->all(), [
                 'nom' => ['string', 'max:255'],
                 'prenom' => ['string', 'max:255'],
-                'email' => ['string', 'email', 'max:255', 'unique:users'],
+                'email' => ['string', 'email', 'max:255', 'unique:users,email,' . $id],
                 'password' => ['confirmed', Rules\Password::defaults()],
             ]);
 

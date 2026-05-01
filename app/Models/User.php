@@ -125,4 +125,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Rating::class);
     }
+
+    public function jobs()
+    {
+        return $this->hasMany(Job::class, 'client_id');
+    }
 }

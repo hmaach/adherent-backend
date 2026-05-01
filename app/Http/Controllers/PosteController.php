@@ -323,4 +323,169 @@ class PosteController extends Controller
     }
 
 
+    /**
+     * Returns all posts created by adherents (for post agent moderation).
+     */
+    public function adherentPostesIndex(Request $request)
+    {
+        $perPage = $request->input('per_page', 10);
+        $page    = $request->input('page', 1);
+        $q       = $request->input('q', '');
+
+        $query = Poste::select(
+                'postes.id as id',
+                'users.id as user_id',
+                'users.nom',
+                'users.prenom',
+                'users.role',
+                'postes.libelle',
+                'postes.type',
+                'postes.audience',
+                'postes.created_at',
+                DB::raw('coalesce(count(reacts.poste_id), 0) as reacts')
+            )
+            ->join('users', 'users.id', '=', 'postes.user_id')
+            ->leftJoin('reacts', 'reacts.poste_id', '=', 'postes.id')
+            ->where('users.role', 'adherent')
+            ->groupBy('postes.id', 'users.id', 'users.nom', 'users.prenom', 'users.role',
+                      'postes.libelle', 'postes.type', 'postes.audience', 'postes.created_at')
+            ->orderBy('postes.created_at', 'desc');
+
+        $type     = $request->input('type', '');
+        $audience = $request->input('audience', '');
+
+        if ($q) {
+            $query->where(function ($qb) use ($q) {
+                $qb->where('postes.libelle', 'LIKE', "%$q%")
+                   ->orWhere('users.nom', 'LIKE', "%$q%")
+                   ->orWhere('users.prenom', 'LIKE', "%$q%");
+            });
+        }
+
+        if ($type) {
+            $query->where('postes.type', $type);
+        }
+
+        if ($audience) {
+            $query->where('postes.audience', $audience);
+        }
+
+        $postes = $query->paginate($perPage, ['*'], 'page', $page);
+
+        // Attach images
+        foreach ($postes as $post) {
+            $post->images = Photo::where('poste_id', $post->id)
+                ->pluck('path')
+                ->map(fn($path) => asset('storage/' . $path))
+                ->toArray();
+        }
+
+        return response()->json($postes);
+    }
+
+    /**
+     * Allows a post_agent (or admin) to delete any adherent post.
+     */
+    public function destroyByPostAgent(Request $request, $id)
+    {
+        $user  = Auth::user();
+        $poste = Poste::find($id);
+
+        if (!$poste) {
+            return response()->json(['message' => 'Poste not found'], 404);
+        }
+
+        // Make sure only adherent posts can be deleted via this route
+        $author = \App\Models\User::find($poste->user_id);
+        if (!$author || $author->role !== 'adherent') {
+            return response()->json(['message' => 'Ce poste ne peut pas être géré par un agent.'], 403);
+        }
+
+        $pdf  = PDF::where('poste_id', $id)->first();
+        $imgs = Photo::where('poste_id', $id)->get();
+
+        if ($pdf && Storage::exists($pdf->path)) {
+            Storage::delete($pdf->path);
+            $pdf->delete();
+        }
+
+        foreach ($imgs as $img) {
+            if (Storage::exists($img->path)) {
+                Storage::delete($img->path);
+            }
+            $img->delete();
+        }
+
+        $poste->delete();
+
+        return response()->json(['message' => 'success']);
+    }
+
+    /**
+     * Bulk-delete multiple adherent posts (post agent).
+     */
+    public function bulkDestroyByPostAgent(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids) || !is_array($ids)) {
+            return response()->json(['message' => 'No IDs provided'], 422);
+        }
+
+        $deleted = 0;
+        foreach ($ids as $id) {
+            $poste  = Poste::find($id);
+            if (!$poste) continue;
+
+            $author = \App\Models\User::find($poste->user_id);
+            if (!$author || $author->role !== 'adherent') continue;
+
+            $pdf  = PDF::where('poste_id', $id)->first();
+            $imgs = Photo::where('poste_id', $id)->get();
+
+            if ($pdf && Storage::exists($pdf->path)) { Storage::delete($pdf->path); $pdf->delete(); }
+            foreach ($imgs as $img) {
+                if (Storage::exists($img->path)) Storage::delete($img->path);
+                $img->delete();
+            }
+
+            $poste->delete();
+            $deleted++;
+        }
+
+        return response()->json(['message' => 'success', 'deleted' => $deleted]);
+    }
+
+    /**
+     * Returns post counts per type and per audience for the stats dashboard.
+     */
+    public function adherentPostesStats()
+    {
+        $base = Poste::join('users', 'users.id', '=', 'postes.user_id')
+                     ->where('users.role', 'adherent');
+
+        $total = (clone $base)->count();
+
+        $byType = (clone $base)
+            ->select('postes.type', DB::raw('count(*) as total'))
+            ->groupBy('postes.type')
+            ->pluck('total', 'postes.type');
+
+        $byAudience = (clone $base)
+            ->select('postes.audience', DB::raw('count(*) as total'))
+            ->groupBy('postes.audience')
+            ->pluck('total', 'postes.audience');
+
+        // Posts in the last 7 days
+        $recentCount = (clone $base)
+            ->where('postes.created_at', '>=', now()->subDays(7))
+            ->count();
+
+        return response()->json([
+            'total'       => $total,
+            'recent'      => $recentCount,
+            'by_type'     => $byType,
+            'by_audience' => $byAudience,
+        ]);
+    }
+
 }

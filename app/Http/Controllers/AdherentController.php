@@ -49,6 +49,14 @@ class AdherentController extends Controller
 
             return $adherent;
         } else {
+            $user = \App\Models\User::find($id);
+            if ($user) {
+                return response()->json([
+                    'is_only_user' => true,
+                    'user_id' => $user->id,
+                    'user' => $user
+                ], 200);
+            }
             return response()->json(['message' => 'Adherent not found'], 404);
         }
     }
@@ -383,7 +391,7 @@ class AdherentController extends Controller
 
     public function updateAbonnement(Request $request, string $id)
     {
-        $adherent = Adherent::find($id);
+        $adherent = Adherent::with('user')->find($id);
         if (!$adherent) {
             return response()->json(['message' => 'Adherent not found'], 404);
         }
@@ -392,6 +400,84 @@ class AdherentController extends Controller
         $adherent->subscription_end_date = $request->input('end_date', $adherent->subscription_end_date);
         $adherent->save();
 
+        if ($adherent->user) {
+            if ($adherent->subscription_status === 'active') {
+                $adherent->user->role = 'adherent';
+            } else {
+                $adherent->user->role = 'user';
+            }
+            $adherent->user->save();
+        }
+
         return response()->json(['message' => 'success', 'adherent' => $adherent]);
+    }
+
+    public function contactAdherent(Request $request, string $id)
+    {
+        $request->validate([
+            'message' => 'required|string|max:1000'
+        ]);
+
+        $adherent = Adherent::with('user')->find($id);
+        if (!$adherent || !$adherent->user) {
+            return response()->json(['message' => 'Adherent not found'], 404);
+        }
+
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        \Illuminate\Support\Facades\Mail::to($adherent->user->email)->send(
+            new \App\Mail\ContactAdherentMail($user->nom . ' ' . $user->prenom, $user->email, $request->message)
+        );
+
+        return response()->json(['message' => 'Message sent successfully']);
+    }
+
+    public function upgrade(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        if ($user->role === 'adherent') {
+            return response()->json(['message' => 'Vous êtes déjà un adhérent.'], 400);
+        }
+
+        $validated = $request->validate([
+            'secteur_id' => 'required|exists:secteurs,id',
+            'profession' => 'required|string|max:100',
+            'ville' => 'required|string|max:100',
+            'propos' => 'nullable|string|max:1000',
+        ]);
+
+        $adherent = Adherent::firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'secteur_id' => $validated['secteur_id'],
+                'profession' => $validated['profession'],
+                'ville' => $validated['ville'],
+                'propos' => $validated['propos'] ?? null,
+                'subscription_status' => 'pending'
+            ]
+        );
+
+        // Update fields if it already existed but was inactive
+        if (!$adherent->wasRecentlyCreated) {
+            $adherent->update([
+                'secteur_id' => $validated['secteur_id'],
+                'profession' => $validated['profession'],
+                'ville' => $validated['ville'],
+                'propos' => $validated['propos'] ?? $adherent->propos,
+                'subscription_status' => 'pending'
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Demande d\'adhésion soumise. En attente de paiement et de validation.',
+            'adherent' => $adherent
+        ]);
     }
 }
