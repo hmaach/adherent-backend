@@ -5,19 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Announce extends Model
+class MarketplaceNotification extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'titre',
-        'prix',
-        'order',
-        'desc',
-        'debut',
-        'fin',
-        'img'
-    ];
+    protected $fillable = ['user_id', 'type', 'title', 'message', 'is_read', 'related_type', 'related_id'];
 
     public function user()
     {

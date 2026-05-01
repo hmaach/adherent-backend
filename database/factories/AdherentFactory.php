@@ -35,7 +35,7 @@ class AdherentFactory extends Factory
             'user_id' => $user_id,
            'secteur_id' => $secteur_id,
             'propos' => fake()->text(100),
-            'profession' => fake()->text(20),
+            'profession' => fake()->jobTitle(),
             'ville' => $ville,
         ];
     }

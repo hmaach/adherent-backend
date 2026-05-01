@@ -9,7 +9,7 @@ class Adherent extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['propos', 'profession', 'ville', 'secteur_id'];
+    protected $fillable = ['user_id', 'propos', 'profession', 'ville', 'secteur_id', 'subscription_status', 'subscription_end_date'];
 
     public function secteur()
     {
@@ -29,5 +29,10 @@ class Adherent extends Model
     public function rating()
     {
         return $this->hasMany(Rating::class);
+    }
+
+    public function bids()
+    {
+        return $this->hasMany(Bid::class);
     }
 }

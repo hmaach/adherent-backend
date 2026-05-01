@@ -54,6 +54,23 @@ Route::middleware('auth:sanctum')->group(function () {
                     Route::delete('delete/{id}', 'destroy');
                 });
             });
+            Route::controller(AdherentController::class)->group(function () {
+                Route::prefix('abonnement')->group(function () {
+                    Route::get('', 'adminAbonnementsIndex');
+                    Route::put('update/{id}', 'updateAbonnement');
+                });
+            });
+        });
+    });
+
+    Route::middleware('post_agent')->group(function () {
+        Route::prefix('post-agent')->group(function () {
+            Route::controller(\App\Http\Controllers\PosteController::class)->group(function () {
+                Route::get('postes',         'adherentPostesIndex');
+                Route::get('postes/stats',   'adherentPostesStats');
+                Route::delete('postes/{id}/delete', 'destroyByPostAgent');
+                Route::post('postes/bulk-delete',   'bulkDestroyByPostAgent');
+            });
         });
     });
 
@@ -73,6 +90,8 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{id}/remove-profil', 'removeProfilAdherent');
             Route::post('/{id}/removeImage', 'removeImage');
             Route::post('/{id}/rate', 'rate');
+            Route::post('/{id}/contact', 'contactAdherent');
+            Route::post('/upgrade', 'upgrade');
         });
     });
 
@@ -109,6 +128,23 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('pdf/update/{pdf}', 'update');
         Route::post('pdf/removecategory/{pdf}', 'removeCategory');
     });
+
+    // RFP Engine Core Routes
+    Route::prefix('marketplace')->group(function () {
+        Route::get('jobs', [\App\Http\Controllers\Api\JobController::class, 'index']);
+        Route::get('jobs/{job}', [\App\Http\Controllers\Api\JobController::class, 'show']);
+        Route::post('jobs', [\App\Http\Controllers\Api\JobController::class, 'store'])->middleware('throttle:60,1');
+        Route::post('jobs/{job}/close', [\App\Http\Controllers\Api\JobController::class, 'close']);
+        
+        // Bids
+        Route::post('jobs/{job}/bids', [\App\Http\Controllers\Api\BidController::class, 'store'])->middleware('throttle:60,1');
+        Route::post('bids/{bid}/accept', [\App\Http\Controllers\Api\BidController::class, 'accept']);
+
+        // Notifications
+        Route::get('notifications', [\App\Http\Controllers\Api\MarketplaceNotificationController::class, 'index']);
+        Route::post('notifications/{id}/read', [\App\Http\Controllers\Api\MarketplaceNotificationController::class, 'markAsRead']);
+        Route::post('notifications/read-all', [\App\Http\Controllers\Api\MarketplaceNotificationController::class, 'markAllAsRead']);
+    });
 });
 
 Route::get('archive', [PdfCategorieController::class, 'index']);
@@ -131,6 +167,7 @@ Route::prefix('public')->group(function () {
 Route::resource('/pdf', PDFController::class);
 
 Route::get('/downloadpdf', [PDFController::class, 'downloadPDF']);
+Route::get('/notifs', [NotificationController::class, 'index']);
 Route::get('/search', [SearchController::class, 'globalSearch']);
 Route::get('/edit', [PosteController::class, 'edit']);
 Route::get('eventspublic', [EvenementController::class, 'index']);
@@ -170,7 +207,6 @@ Route::get('cv/{id}', [StagiaireController::class, 'show']);
 Route::post('/stagiaires/{id}/add-propos', [StagiaireController::class, 'addPropos']);
 
 
-Route::post('/stagiaires/import', [ExcelImportController::class, 'import']);
 Route::get('/import', [ExcelImportController::class, 'importView'])->name('import.view');
 Route::post('/stagiaires/import', [ExcelImportController::class, 'import'])->name('import');
 Route::post('/search', [ExcelImportController::class, 'search'])->name('search');
