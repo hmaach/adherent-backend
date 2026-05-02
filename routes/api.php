@@ -152,7 +152,6 @@ Route::prefix('public')->group(function () {
     Route::controller(AdherentController::class)->group(function () {
         Route::get('adherent/', 'adherentsIndex');
         Route::get('adherent/{id}', 'index');
-        Route::post('adherent/{id}/profil', 'updateProfilAdherent');
         Route::get('4-adherents', 'randomFouradherent');
     });
 
@@ -164,7 +163,7 @@ Route::prefix('public')->group(function () {
 
     Route::get('secteur', [SecteurController::class, 'index']);
 });
-Route::resource('/pdf', PDFController::class);
+Route::resource('/pdf', PDFController::class)->only(['index', 'show']);
 
 Route::get('/downloadpdf', [PDFController::class, 'downloadPDF']);
 Route::get('/notifs', [NotificationController::class, 'index']);
@@ -180,35 +179,35 @@ Route::get('fourstagiaires', [StagiaireController::class, 'randomFourStagiaires'
 
 
 Route::get('stagiaire/{id}', [StagiaireController::class, 'index']);
-Route::put('stagiaire/{id}', [StagiaireController::class, 'update']);
 
-Route::put('stagiaire/{id}/competences/{competenceId}', [StagiaireController::class, 'updateCompetences']);
-Route::post('/stagiaire/{id}/competences', [StagiaireController::class, 'addCompetence']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::put('stagiaire/{id}', [StagiaireController::class, 'update']);
+    Route::put('stagiaire/{id}/competences/{competenceId}', [StagiaireController::class, 'updateCompetences']);
+    Route::post('/stagiaire/{id}/competences', [StagiaireController::class, 'addCompetence']);
 
+    Route::prefix('stagiaires')->group(function () {
+        Route::post('{id}/experiences', [StagiaireController::class, 'addExperience']);
+        Route::put('{id}/experiences/{experienceId}', [StagiaireController::class, 'updateExperience']);
+        Route::post('/{id}/add-propos', [StagiaireController::class, 'addPropos']);
+    });
 
-Route::prefix('stagiaires')->group(function () {
-    Route::post('{id}/experiences', [StagiaireController::class, 'addExperience']);
-    Route::put('{id}/experiences/{experienceId}', [StagiaireController::class, 'updateExperience']);
-});
+    Route::prefix('formations')->group(function () {
+        Route::post('/{id}', [StagiaireController::class, 'addFormation']);
+        Route::put('/{id}/{formationId}', [StagiaireController::class, 'updateFormation']);
+    });
 
-Route::prefix('formations')->group(function () {
-    Route::post('/{id}', [StagiaireController::class, 'addFormation']);
-    Route::put('/{id}/{formationId}', [StagiaireController::class, 'updateFormation']);
-});
-
-
-Route::prefix('interets')->group(function () {
-    Route::post('/{id}', [StagiaireController::class, 'addInteret']);
-    Route::put('/{id}/{interetId}', [StagiaireController::class, 'updateInteret']);
+    Route::prefix('interets')->group(function () {
+        Route::post('/{id}', [StagiaireController::class, 'addInteret']);
+        Route::put('/{id}/{interetId}', [StagiaireController::class, 'updateInteret']);
+    });
 });
 
 
 Route::get('cv/{id}', [StagiaireController::class, 'show']);
-Route::post('/stagiaires/{id}/add-propos', [StagiaireController::class, 'addPropos']);
-
-
 Route::get('/import', [ExcelImportController::class, 'importView'])->name('import.view');
-Route::post('/stagiaires/import', [ExcelImportController::class, 'import'])->name('import');
+Route::post('/stagiaires/import', [ExcelImportController::class, 'import'])
+    ->middleware(['auth:sanctum', 'admin'])
+    ->name('import');
 Route::post('/search', [ExcelImportController::class, 'search'])->name('search');
 Route::get('/stagiairesExc', [ExcelImportController::class, 'index']);
 
