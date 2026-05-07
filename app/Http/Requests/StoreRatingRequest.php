@@ -23,7 +23,7 @@ class StoreRatingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'value' => 'required|integer',
+            'value' => 'required|integer|min:1|max:5',
         ];
     }
 }

@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class AdherentController extends Controller
 {
@@ -147,7 +148,21 @@ class AdherentController extends Controller
 
         if ($user && $adherent) {
             if ($user->id == $adherent->user_id) {
-                return response()->json(['message' => "Vous ne pouvez pas donner votre avis sur vous-même"]);
+                return response()->json(['message' => "Vous ne pouvez pas donner votre avis sur vous-même"], 403);
+            }
+
+            $hasAcceptedJobWithAdherent = \App\Models\Bid::where('adherent_id', $adherent->id)
+                ->where('status', 'accepted')
+                ->whereHas('job', function ($query) use ($user) {
+                    $query->where('client_id', $user->id)
+                        ->whereIn('status', ['in_progress', 'closed']);
+                })
+                ->exists();
+
+            if (!$hasAcceptedJobWithAdherent) {
+                return response()->json([
+                    'message' => "Vous pouvez noter uniquement un adhérent avec qui vous avez une demande acceptée."
+                ], 403);
             }
 
             $rating = Rating::where('user_id', $user->id)
@@ -391,13 +406,31 @@ class AdherentController extends Controller
 
     public function updateAbonnement(Request $request, string $id)
     {
+        $validated = $request->validate([
+            'status' => ['nullable', Rule::in(['active', 'expired', 'pending', 'cancelled'])],
+            'end_date' => 'nullable|date',
+            'payment_reference' => 'nullable|string|max:120',
+            'payment_admin_notes' => 'nullable|string|max:2000',
+        ]);
+
         $adherent = Adherent::with('user')->find($id);
         if (!$adherent) {
             return response()->json(['message' => 'Adherent not found'], 404);
         }
 
-        $adherent->subscription_status = $request->input('status', $adherent->subscription_status);
-        $adherent->subscription_end_date = $request->input('end_date', $adherent->subscription_end_date);
+        $oldStatus = $adherent->subscription_status;
+        $adherent->subscription_status = $validated['status'] ?? $adherent->subscription_status;
+        $adherent->subscription_end_date = $validated['end_date'] ?? $adherent->subscription_end_date;
+        $adherent->payment_reference = $validated['payment_reference'] ?? $adherent->payment_reference;
+        $adherent->payment_admin_notes = $validated['payment_admin_notes'] ?? $adherent->payment_admin_notes;
+
+        if ($adherent->subscription_status === 'active') {
+            $adherent->paid_at = $adherent->paid_at ?? now();
+            $adherent->subscription_end_date = $adherent->subscription_end_date ?? now()->addYear()->toDateString();
+        } elseif ($oldStatus === 'active' && $adherent->subscription_status !== 'active') {
+            $adherent->paid_at = null;
+        }
+
         $adherent->save();
 
         if ($adherent->user) {
@@ -451,7 +484,16 @@ class AdherentController extends Controller
             'profession' => 'required|string|max:100',
             'ville' => 'required|string|max:100',
             'propos' => 'nullable|string|max:1000',
+            'payment_method' => ['required', Rule::in(['bank_transfer', 'cash', 'other'])],
+            'payment_reference' => 'nullable|string|max:120',
+            'payment_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:4096',
         ]);
+
+        $paymentProofPath = null;
+        if ($request->hasFile('payment_proof')) {
+            $paymentProofPath = $request->file('payment_proof')->store('public/adherent-payments');
+            $paymentProofPath = substr($paymentProofPath, 7);
+        }
 
         $adherent = Adherent::firstOrCreate(
             ['user_id' => $user->id],
@@ -460,18 +502,29 @@ class AdherentController extends Controller
                 'profession' => $validated['profession'],
                 'ville' => $validated['ville'],
                 'propos' => $validated['propos'] ?? null,
-                'subscription_status' => 'pending'
+                'subscription_status' => 'pending',
+                'payment_method' => $validated['payment_method'],
+                'payment_reference' => $validated['payment_reference'] ?? null,
+                'payment_proof_path' => $paymentProofPath,
             ]
         );
 
         // Update fields if it already existed but was inactive
         if (!$adherent->wasRecentlyCreated) {
+            if ($paymentProofPath && $adherent->payment_proof_path) {
+                Storage::delete('public/' . $adherent->payment_proof_path);
+            }
+
             $adherent->update([
                 'secteur_id' => $validated['secteur_id'],
                 'profession' => $validated['profession'],
                 'ville' => $validated['ville'],
                 'propos' => $validated['propos'] ?? $adherent->propos,
-                'subscription_status' => 'pending'
+                'subscription_status' => 'pending',
+                'payment_method' => $validated['payment_method'],
+                'payment_reference' => $validated['payment_reference'] ?? $adherent->payment_reference,
+                'payment_proof_path' => $paymentProofPath ?? $adherent->payment_proof_path,
+                'paid_at' => null,
             ]);
         }
 

@@ -20,9 +20,24 @@ use App\Models\Interet;
 
 
 use App\Models\Photo;
+use Illuminate\Support\Facades\Auth;
 
 class StagiaireController extends Controller
 {
+    private function rejectIfNotOwnerOrAdmin($id)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        if ((int) $user->id !== (int) $id && $user->role !== 'admin') {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        return null;
+    }
 
     public function randomFourStagiaires()
     {
@@ -95,6 +110,10 @@ class StagiaireController extends Controller
 
     public function update(Request $request, $id)
     {
+        if ($response = $this->rejectIfNotOwnerOrAdmin($id)) {
+            return $response;
+        }
+
         $stagiaire = User::find($id);
 
         if ($stagiaire) {
@@ -121,10 +140,14 @@ class StagiaireController extends Controller
 
     public function updateCompetences(Request $request, $id, $competenceId)
     {
+        if ($response = $this->rejectIfNotOwnerOrAdmin($id)) {
+            return $response;
+        }
+
         $stagiaire = User::find($id);
 
         if ($stagiaire) {
-            $competence = Competence::find($competenceId);
+            $competence = $stagiaire->competences()->find($competenceId);
 
             if ($competence) {
                 $competence->categorie = $request->input('categorie');
@@ -148,6 +171,10 @@ class StagiaireController extends Controller
 
     public function addCompetence(Request $request, $id)
     {
+        if ($response = $this->rejectIfNotOwnerOrAdmin($id)) {
+            return $response;
+        }
+
         $stagiaire = User::find($id);
 
         if ($stagiaire) {
@@ -168,6 +195,10 @@ class StagiaireController extends Controller
     }
     public function addExperience(Request $request, $id)
     {
+        if ($response = $this->rejectIfNotOwnerOrAdmin($id)) {
+            return $response;
+        }
+
         $stagiaire = User::find($id);
 
         if ($stagiaire) {
@@ -191,6 +222,10 @@ class StagiaireController extends Controller
 
     public function updateExperience(Request $request, $id, $experienceId)
     {
+        if ($response = $this->rejectIfNotOwnerOrAdmin($id)) {
+            return $response;
+        }
+
         $stagiaire = User::find($id);
 
         if ($stagiaire) {
@@ -224,6 +259,10 @@ class StagiaireController extends Controller
 
     public function addPropos(Request $request, $id)
     {
+        if ($response = $this->rejectIfNotOwnerOrAdmin($id)) {
+            return $response;
+        }
+
         $stagiaire = User::find($id);
 
         if ($stagiaire) {
@@ -248,6 +287,10 @@ class StagiaireController extends Controller
     }
     public function addFormation(Request $request, $id)
     {
+        if ($response = $this->rejectIfNotOwnerOrAdmin($id)) {
+            return $response;
+        }
+
         $stagiaire = User::find($id);
 
         if ($stagiaire) {
@@ -270,6 +313,10 @@ class StagiaireController extends Controller
 
     public function updateFormation(Request $request, $id, $formationId)
     {
+        if ($response = $this->rejectIfNotOwnerOrAdmin($id)) {
+            return $response;
+        }
+
         $stagiaire = User::find($id);
 
         if ($stagiaire) {
@@ -298,6 +345,10 @@ class StagiaireController extends Controller
 
     public function addInteret(Request $request, $id)
     {
+        if ($response = $this->rejectIfNotOwnerOrAdmin($id)) {
+            return $response;
+        }
+
         $stagiaire = User::find($id);
 
         if ($stagiaire) {
@@ -318,6 +369,10 @@ class StagiaireController extends Controller
 
     public function updateInteret(Request $request, $id, $interetId)
     {
+        if ($response = $this->rejectIfNotOwnerOrAdmin($id)) {
+            return $response;
+        }
+
         $stagiaire = User::find($id);
 
         if ($stagiaire) {

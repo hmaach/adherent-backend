@@ -18,15 +18,34 @@ class PDFController extends Controller
 
     public function downloadPDF(Request $request)
     {
-        $pdfPath = $request->input('pdf_path');
-        $filePath = storage_path('app/' . $pdfPath);
-        $fileName = basename($filePath);
-        $headers = [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-        ];
+        $validated = $request->validate([
+            'pdf_id' => 'nullable|integer|exists:p_d_f_s,id',
+            'pdf_path' => 'nullable|string|max:255',
+        ]);
 
-        return response()->file($filePath, $headers);
+        if (empty($validated['pdf_id']) && empty($validated['pdf_path'])) {
+            return response()->json(['message' => 'A PDF identifier is required.'], 422);
+        }
+
+        $pdf = isset($validated['pdf_id'])
+            ? PDF::find($validated['pdf_id'])
+            : PDF::where('path', $validated['pdf_path'])->first();
+
+        if (!$pdf || str_contains($pdf->path, '..') || str_contains($pdf->path, '\\')) {
+            return response()->json(['message' => 'PDF not found.'], 404);
+        }
+
+        $filePath = storage_path('app/' . ltrim($pdf->path, '/'));
+        $storageRoot = realpath(storage_path('app'));
+        $realFilePath = realpath($filePath);
+
+        if (!$realFilePath || !$storageRoot || !str_starts_with($realFilePath, $storageRoot) || !is_file($realFilePath)) {
+            return response()->json(['message' => 'PDF file not found.'], 404);
+        }
+
+        return response()->download($realFilePath, basename($realFilePath), [
+            'Content-Type' => 'application/pdf',
+        ]);
     }
 
     /**
